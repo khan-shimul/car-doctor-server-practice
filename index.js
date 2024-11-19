@@ -12,8 +12,6 @@ app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.up5eg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-console.log(uri)
-
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -28,6 +26,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const serviceCollection = client.db('carDoctorPractice').collection('services');
+    const bookingCollection = client.db('carDoctorPractice').collection('booking');
 
     // service related api
     app.get('/services', async(req, res) => {
@@ -43,7 +42,38 @@ async function run() {
         };
         const result = await serviceCollection.findOne(query, options);
         res.send(result);
-    })
+    });
+
+    // booking related api
+    app.post('/booking', async(req, res) => {
+      const booking = req.body;
+      const result = await bookingCollection.insertOne(booking);
+      res.send(result);
+    });
+    app.get('/booking', async(req, res) => {
+      let query = {}
+      if(req.query.email){
+        query = {email: req.query.email}
+      }
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.delete('/booking/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const result = await bookingCollection.deleteOne(filter);
+      res.send(result);
+    });
+    app.patch('/booking/:id', async(req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const status = req.body.status;
+      const updateDoc = {
+        $set: {status}
+      };
+      const result = await bookingCollection.updateOne(filter, updateDoc);
+      res.send(result)
+    });
 
 
     // Send a ping to confirm a successful connection
