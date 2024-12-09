@@ -77,7 +77,22 @@ async function run() {
 
     // service related api
     app.get('/services', async(req, res) => {
-        const result = await serviceCollection.find().toArray();
+      // update the price field string to number
+      serviceCollection.updateMany(
+        { price: { $type: "string" } },
+        [
+          { $set: { price: { $toDouble: "$price" } } }
+        ]
+      );
+      const filter = req.query;
+      const query = {
+        // price: { $gte: 20, $lte: 200,},
+        title: {$regex: filter.search, $options: 'i'}
+      };
+      const options = {
+        sort: {price: filter.sort === 'asc' ? 1 : -1}
+      }
+        const result = await serviceCollection.find(query, options).toArray();
         res.send(result);
     });
     app.get('/service/:id', async(req, res) => {
